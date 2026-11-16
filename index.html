@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101510">
+<title>GYM TRACKER</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101510;color:#f2f5f1;font-family:Arial,sans-serif;padding:20px}
+header{text-align:center;padding:18px 0}
+h1{color:#8be36b;letter-spacing:3px;margin-bottom:5px}
+.sub{color:#9ba99a;font-size:13px}
+nav{display:flex;gap:7px;overflow:auto;margin:18px 0}
+nav button{background:#202a20;color:white;border:0;border-radius:10px;padding:12px;white-space:nowrap}
+nav button.active{background:#8be36b;color:#10200c;font-weight:bold}
+.card{background:#1b241b;border:1px solid #2b392b;border-radius:15px;padding:17px;margin:13px 0}
+h2{font-size:19px;color:#8be36b}
+h3{font-size:15px}
+p{color:#b9c4b6}
+input,select,textarea{width:100%;padding:12px;background:#101810;color:white;border:1px solid #394839;border-radius:9px;margin:7px 0 14px}
+button.action{background:#8be36b;color:#10200c;border:0;border-radius:10px;padding:12px 16px;font-weight:bold;width:100%;margin:5px 0}
+.stat{font-size:27px;font-weight:bold;color:#8be36b}
+.small{font-size:12px;color:#9ba99a}
+.page{display:none}.page.show{display:block}
+.entry{border-bottom:1px solid #354135;padding:10px 0}
+.quote{color:#d4e6c9;font-style:italic}
+</style>
+</head>
+<body>
+<header>
+<h1>GYM TRACKER</h1>
+<div class="sub">ENTRENA · REGISTRA · SUPÉRATE</div>
+</header>
+
+<nav>
+<button class="active" onclick="show('inicio',this)">Inicio</button>
+<button onclick="show('entreno',this)">Entrenamiento</button>
+<button onclick="show('salto',this)">Salto</button>
+<button onclick="show('stats',this)">Estadísticas</button>
+<button onclick="show('diario',this)">Diario</button>
+</nav>
+
+<section id="inicio" class="page show">
+<div class="card">
+<h2>Tu progreso</h2>
+<p>Sesiones registradas</p>
+<div class="stat" id="total">0</div>
+<p>Entrena a tu ritmo. Lo importante es avanzar.</p>
+</div>
+<div class="card">
+<h2>Objetivos actuales</h2>
+<label>Flexiones por serie</label>
+<input id="flex" type="number" value="10">
+<label>Dominadas por serie</label>
+<input id="dominadas" type="number" value="6">
+<button class="action" onclick="saveGoals()">Guardar objetivos</button>
+</div>
+<div class="card">
+<h2>Frase del día</h2>
+<p class="quote" id="frase">La constancia supera a la motivación.</p>
+<button class="action" onclick="newQuote()">Cambiar frase</button>
+</div>
+</section>
+
+<section id="entreno" class="page">
+<div class="card">
+<h2>Registrar entrenamiento</h2>
+<label>Tipo de entrenamiento</label>
+<select id="tipo">
+<option>Fuerza</option><option>Resistencia</option>
+<option>Salto</option><option>Cuerpo completo</option>
+<option>Otro</option>
+</select>
+<label>Ejercicios realizados</label>
+<textarea id="ejercicios" placeholder="Ej. Flexiones, sentadillas..."></textarea>
+<label>Duración (minutos)</label>
+<input id="duracion" type="number" placeholder="30">
+<label>Esfuerzo</label>
+<select id="esfuerzo">
+<option>Suave</option><option>Moderado</option><option>Intenso</option>
+</select>
+<label>Notas</label>
+<textarea id="notas" placeholder="¿Cómo te fue hoy?"></textarea>
+<button class="action" onclick="addWorkout()">Guardar entrenamiento</button>
+</div>
+<div class="card"><h2>Historial</h2><div id="historial">Aún no hay entrenamientos.</div></div>
+</section>
+
+<section id="salto" class="page">
+<div class="card">
+<h2>Registro de salto</h2>
+<p>Guarda tu mejor marca y observa cómo mejoras.</p>
+<label>Altura alcanzada (metros)</label>
+<input id="altura" type="number" step="0.01" placeholder="Ej. 2.50">
+<button class="action" onclick="addJump()">Guardar marca</button>
+<h3>Tu mejor marca</h3>
+<div class="stat" id="record">0.00 m</div>
+</div>
+<div class="card"><h2>Historial de saltos</h2><div id="saltos">Sin registros todavía.</div></div>
+</section>
+
+<section id="stats" class="page">
+<div class="card">
+<h2>Estadísticas</h2>
+<p>Entrenamientos completados</p><div class="stat" id="sTotal">0</div>
+<p>Minutos entrenados</p><div class="stat" id="minutos">0</div>
+<p>Mejor salto</p><div class="stat" id="sSalto">0.00 m</div>
+</div>
+</section>
+
+<section id="diario" class="page">
+<div class="card">
+<h2>Diario personal</h2>
+<label>Mi objetivo</label>
+<textarea id="objetivo" placeholder="¿Qué quiero conseguir?"></textarea>
+<label>Notas personales</label>
+<textarea id="diarioTexto" placeholder="Escribe aquí..."></textarea>
+<button class="action" onclick="saveDiary()">Guardar diario</button>
+</div>
+<div class="card">
+<h2>Respaldo</h2>
+<p>Descarga tus registros para guardarlos.</p>
+<button class="action" onclick="exportData()">Exportar mis datos</button>
+</div>
+</section>
+
+<script>
+const get=(k,d)=>JSON.parse(localStorage.getItem(k)||JSON.stringify(d));
+let workouts=get('workouts',[]);
+let jumps=get('jumps',[]);
+let goals=get('goals',{flex:10,dominadas:6});
+let diary=get('diary',{objetivo:'',texto:''});
+
+function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function show(id,btn){
+document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+document.getElementById(id).classList.add('show');
+document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+}
+function saveGoals(){
+goals={flex:document.getElementById('flex').value,dominadas:document.getElementById('dominadas').value};
+save('goals',goals);alert('Objetivos guardados');
+}
+function addWorkout(){
+let e=document.getElementById('ejercicios').value;
+let d=Number(document.getElementById('duracion').value);
+if(!e||!d){alert('Completa ejercicios y duración');return}
+workouts.unshift({fecha:new Date().toLocaleDateString(),tipo:tipo.value,ejercicios:e,duracion:d,esfuerzo:esfuerzo.value,notas:notas.value});
+save('workouts',workouts);render();ejercicios.value='';duracion.value='';notas.value='';
+alert('¡Entrenamiento guardado!');
+}
+function addJump(){
+let a=Number(altura.value);
+if(!a||a<=0){alert('Escribe una altura válida');return}
+jumps.unshift({fecha:new Date().toLocaleDateString(),altura:a});
+save('jumps',jumps);render();altura.value='';
+}
+function saveDiary(){
+diary={objetivo:objetivo.value,texto:diarioTexto.value};
+save('diary',diary);alert('Diario guardado');
+}
+function render(){
+total.textContent=workouts.length;
+sTotal.textContent=workouts.length;
+minutos.textContent=workouts.reduce((s,w)=>s+w.duracion,0);
+historial.innerHTML=workouts.length?workouts.map(w=>`<div class="entry"><b>${w.tipo}</b> · ${w.fecha}<br>${w.ejercicios}<br><span class="small">${w.duracion} min · ${w.esfuerzo}</span><br>${w.notas||''}</div>`).join(''):'Aún no hay entrenamientos.';
+let best=Math.max(0,...jumps.map(j=>j.altura));
+record.textContent=best.toFixed(2)+' m';
+sSalto.textContent=best.toFixed(2)+' m';
+saltos.innerHTML=jumps.length?jumps.map(j=>`<div class="entry">${j.fecha} — <b>${j.altura.toFixed(2)} m</b></div>`).join(''):'Sin registros todavía.';
+}
+function newQuote(){
+let q=['La constancia supera a la motivación.','Un día más, una mejora más.','Compite contra tu versión anterior.','El progreso lleva tiempo.','Hazlo bien, incluso cuando nadie te vea.'];
+frase.textContent=q[Math.floor(Math.random()*q.length)];
+}
+function exportData(){
+let data={workouts,jumps,goals,diary};
+let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='gym-tracker-datos.json';a.click();
+}
+flex.value=goals.flex;dominadas.value=goals.dominadas;
+objetivo.value=diary.objetivo;diarioTexto.value=diary.texto;
+render();
+</script>
+</body>
+</html>
